@@ -1,0 +1,77 @@
+name:                spot-instance-utility
+version:             0.0.0.0
+synopsis:            Tool for selecting EC2 spot instances based on historic prices
+license:             AllRightsReserved
+license-file:        LICENSE
+author:              Michael Xavier
+maintainer:          michael.xavier@soostone.com
+copyright:           Soostone Inc
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  build-depends:         base >=4.6 && <4.7
+                       , csv-conduit
+                       , conduit
+                       , conduit-extra
+                       , containers
+                       , exceptions
+                       , optparse-applicative
+                       , bytestring
+                       , lens
+                       , old-locale
+                       , monad-control
+                       , mtl
+                       , transformers
+                       , process
+                       , time < 1.5
+                       , text
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  exposed-modules:
+    Web.SIU.Analysis
+    Web.SIU.History
+    Web.SIU.Types
+    Web.SIU.Utils
+
+executable spot-instance-utility
+  main-is:             Main.hs
+  build-depends:         base
+                       , csv-conduit
+                       , conduit
+                       , conduit-extra
+                       , containers
+                       , exceptions
+                       , bytestring
+                       , lens
+                       , old-locale
+                       , optparse-applicative
+                       , monad-control
+                       , mtl
+                       , transformers
+                       , process
+                       , time
+                       , text
+                       , spot-instance-utility
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  build-depends:
+      spot-instance-utility
+    , csv-conduit
+    , QuickCheck
+    , quickcheck-instances
+    , tasty
+    , tasty-quickcheck
+    , base
+    , derive
+    , text
+    -- NOOO
+    , containers
+  hs-source-dirs: test
+  default-language:    Haskell2010
