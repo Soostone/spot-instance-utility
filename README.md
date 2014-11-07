@@ -71,5 +71,4 @@ Currently a work in process. Some TODOs:
    be
 3. Use `ec2-describe-availability-zones` so that we can take a
    *region* and compare all zones within that region.
-4. Better analysis on other heuristics we can buy.
-5. Advisor capability.
+4. Advisor capability.
