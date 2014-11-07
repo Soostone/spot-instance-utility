@@ -29,6 +29,7 @@ import System.Exit
 import           Web.SIU.Analysis
 import           Web.SIU.History
 import           Web.SIU.Types
+import           Web.SIU.Utils
 -------------------------------------------------------------------------------
 
 
@@ -36,11 +37,10 @@ import           Web.SIU.Types
 run :: SIUOptions -> IO ()
 run siuo = do
   (cout, cerr, closer) <- historyStream siuo :: IO (Source IO ByteString, Source IO ByteString, IO ExitCode)
-  csvPipeline settings cout (CL.map getNamed =$= analyze siuo) (sinkHandle stdout)
+  csvPipeline awsCSVSettings cout (CL.map getNamed =$= analyze siuo) (sinkHandle stdout)
   cerr $$ sinkHandle stderr
   void closer
   where
-    settings = defCSVSettings { csvSep = '\t'}
 
 
 -------------------------------------------------------------------------------
@@ -83,7 +83,11 @@ optParser = SIUOptions
     <*> many (option auto (long "availability-zone" <>
                            short 'a' <>
                            metavar "AVAILABILITY_ZONE" <>
-                           help ("Availability zone. Can be repated. E.g. us-east-1a")))
+                           help "Availability zone. Can be repated. E.g. us-east-1a"))
+    <*> many (option auto (long "region" <>
+                           short 'r' <>
+                           metavar "REGION" <>
+                           help ("Region, which will be expanded into availability zones. Can be repated. Options: " ++ rOpts)))
     <*> option auto (long "product-description" <>
                      short 'p' <>
                      value LinuxUNIX <>
@@ -99,6 +103,7 @@ optParser = SIUOptions
   where
     pdOpts = showOptions $ M.elems pdOptions
     itOpts = showOptions $ M.elems itOptions
+    rOpts = showOptions $ M.elems rOptions
 
 
 -------------------------------------------------------------------------------

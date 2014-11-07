@@ -4,11 +4,13 @@ module Web.SIU.Utils
     , defaultTimeLocale
     , invertMS
     , note
+    , awsCSVSettings
     ) where
 
 
 -------------------------------------------------------------------------------
 import           Data.ByteString.Char8 (ByteString)
+import           Data.CSV.Conduit
 import qualified Data.Map.Strict       as MS
 import qualified Data.Text             as T
 import qualified Data.Text.Encoding    as T
@@ -36,3 +38,8 @@ invertMS = MS.fromList . map swap . MS.toList
 note :: b -> Maybe a -> Either b a
 note _ (Just a) = Right a
 note b Nothing  = Left b
+
+
+-------------------------------------------------------------------------------
+awsCSVSettings :: CSVSettings
+awsCSVSettings = defCSVSettings { csvSep = '\t' }

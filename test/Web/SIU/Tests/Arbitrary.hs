@@ -16,6 +16,7 @@ import           Web.SIU.Types
 -------------------------------------------------------------------------------
 
 $(derive makeArbitrary ''Duration)
+$(derive makeArbitrary ''Region)
 $(derive makeArbitrary ''AvailabilityZone)
 $(derive makeArbitrary ''ProductDescription)
 $(derive makeArbitrary ''InstanceType)

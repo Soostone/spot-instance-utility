@@ -134,6 +134,53 @@ instance Show AvailabilityZone where
 instance Read AvailabilityZone where
   readsPrec _ s = [(AvailabilityZone $ T.pack s, "")]
 
+instance FromNamedRecord AvailabilityZone where
+  parseNamedRecord nr = AvailabilityZone <$> nr .: "Name"
+
+instance ToNamedRecord AvailabilityZone where
+  toNamedRecord az = ML.fromList
+    [ ("Name", showBS az )
+    ]
+
+
+-------------------------------------------------------------------------------
+data Region =
+     ApNorthEast1
+   | ApSouthEast1
+   | ApSouthEast2
+   | ApCentral1
+   | EuWest1
+   | SaEast1
+   | UsEast1
+   | UsWest1
+   | UsWest2 deriving (Eq,Ord)
+
+instance FromField Region where
+  parseField = textPrismParseField arText "AvailiabilityRegion"
+
+
+arText :: Prism' Text Region
+arText = mapPrism rOptions
+
+rOptions :: MS.Map Text Region
+rOptions = MS.fromList
+    [ ("ap-northeast-1", ApNorthEast1)
+    , ("ap-southeast-1", ApSouthEast1)
+    , ("ap-southeast-2", ApSouthEast2)
+    , ("ap-central-1", ApCentral1)
+    , ("eu-west-1", EuWest1)
+    , ("sa-east-1", SaEast1)
+    , ("us-east-1", UsEast1)
+    , ("us-west-1", UsWest1)
+    , ("us-west-2", UsWest2)
+    ]
+
+instance Show Region where
+  show = textPrismShow arText
+
+instance Read Region where
+  readsPrec = textPrismReadsPrec arText
+
 
 -------------------------------------------------------------------------------
 data ProductDescription =
@@ -201,7 +248,7 @@ getStr = many get
 data SIUOptions = SIUOptions {
       siuDuration           :: Maybe Duration
     , siuInstanceTypes      :: MS.Map InstanceType Int
-    , siuAvailabilityZones  :: [AvailabilityZone]
+    , siuRegions            :: [Region]
     , siuProductDescription :: ProductDescription
     , siuSigmas             :: Int
     -- ^ empty list means all of them

@@ -19,6 +19,10 @@ typesTests = testGroup "Web.SIU.Types"
   [ testProperty "read/show Duration roundtrip" prop_show_read_Duration
 
   , testProperty "read/show AvailabilityZone roundtrip" prop_show_read_AvailabilityZone
+  , testProperty "to/from named record AvailabilityZone roundtrip" prop_nr_AvailabilityZone
+
+  , testProperty "read/show Region roundtrip" prop_show_read_Region
+  , testProperty "text prism Region roundtrip" prop_text_prism_Region
 
   , testProperty "read/show InstanceType roundtrip" prop_show_read_InstanceType
   , testProperty "text prism InstanceType roundtrip" prop_text_prism_InstanceType
@@ -40,9 +44,16 @@ prop_show_read_Duration = prop_show_read
 prop_show_read_AvailabilityZone :: AvailabilityZone -> Property
 prop_show_read_AvailabilityZone = prop_show_read
 
+
+-------------------------------------------------------------------------------
+prop_show_read_Region :: Region -> Property
+prop_show_read_Region = prop_show_read
+
+
 -------------------------------------------------------------------------------
 prop_show_read_InstanceType :: InstanceType -> Property
 prop_show_read_InstanceType = prop_show_read
+
 
 -------------------------------------------------------------------------------
 prop_show_read_ProductDescription :: ProductDescription -> Property
@@ -53,6 +64,11 @@ prop_show_read_ProductDescription = prop_show_read
 prop_show_read a = a === a'
   where
     a' = read $ show a
+
+
+-------------------------------------------------------------------------------
+prop_text_prism_Region :: Region -> Text -> Property
+prop_text_prism_Region = prop_prism arText
 
 
 -------------------------------------------------------------------------------
@@ -67,6 +83,11 @@ prop_text_prism_ProductDescription = prop_prism pdText
 -------------------------------------------------------------------------------
 prop_prism :: (Eq a, Show a) => Prism' b a -> a -> b -> Property
 prop_prism p a b = preview p (review p a) === Just a .&&. lengthOf p b <= 1
+
+
+-------------------------------------------------------------------------------
+prop_nr_AvailabilityZone :: AvailabilityZone -> Property
+prop_nr_AvailabilityZone = prop_nr
 
 
 -------------------------------------------------------------------------------
