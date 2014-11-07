@@ -2,13 +2,17 @@ module Web.SIU.Utils
     ( showBS
     , timeFmt
     , defaultTimeLocale
+    , invertMS
+    , note
     ) where
 
 
 -------------------------------------------------------------------------------
 import           Data.ByteString.Char8 (ByteString)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Map.Strict       as MS
+import qualified Data.Text             as T
+import qualified Data.Text.Encoding    as T
+import           Data.Tuple
 import           System.Locale         (defaultTimeLocale)
 -------------------------------------------------------------------------------
 
@@ -21,3 +25,14 @@ showBS = T.encodeUtf8 . T.pack . show
 -------------------------------------------------------------------------------
 timeFmt :: String
 timeFmt = "%Y-%m-%dT%H:%M:%S%z"
+
+
+-------------------------------------------------------------------------------
+invertMS :: (Ord k, Ord v) => MS.Map k v -> MS.Map v k
+invertMS = MS.fromList . map swap . MS.toList
+
+
+-------------------------------------------------------------------------------
+note :: b -> Maybe a -> Either b a
+note _ (Just a) = Right a
+note b Nothing  = Left b

@@ -2,23 +2,24 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TupleSections              #-}
 module Web.SIU.Types where
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
+import           Control.Lens
 import           Control.Monad
-import           Data.ByteString             (ByteString)
 import           Data.ByteString.Char8       as BS
-import           Data.CSV.Conduit
 import           Data.CSV.Conduit.Conversion
 import qualified Data.Map.Lazy               as ML
-import           Data.Map.Strict             (Map)
-import           Data.Maybe
+import qualified Data.Map.Strict             as MS
 import           Data.Text                   (Text)
 import qualified Data.Text                   as T
+import           Data.Text.Lens
 import           Data.Time
-import           GHC.Generics
+import           GHC.Generics                (Generic)
 import           Text.Read
 -------------------------------------------------------------------------------
 import           Web.SIU.Utils
@@ -61,21 +62,71 @@ instance FromNamedRecord SpotPriceChange where
     <*> nr .: "AvailabilityZone"
 
 -------------------------------------------------------------------------------
-newtype InstanceType = InstanceType {
-     unIT :: Text
-   } deriving (Eq,Ord,FromField)
+data InstanceType =
+     T1Micro
+   | M1Small
+   | M1Medium
+   | M1Large
+   | M1Xlarge
+   | M3Xlarge
+   | M32xlarge
+   | C1Medium
+   | C1Xlarge
+   | C34xlarge
+   | C38xlarge
+   | Cc14xlarge
+   | Cc28xlarge
+   | Cg14xlarge
+   | Cr18xlarge
+   | G22xlarge
+   | M2Xlarge
+   | M22xlarge
+   | M24xlarge
+   deriving (Eq,Ord)
+
+instance FromField InstanceType where
+  parseField = textPrismParseField itText "InstanceType"
+
+
+itText :: Prism' Text InstanceType
+itText = mapPrism itOptions
+
+itOptions :: MS.Map Text InstanceType
+itOptions = MS.fromList
+  [ ("t1.micro", T1Micro)
+  , ("m1.small", M1Small)
+  , ("m1.medium", M1Medium)
+  , ("m1.large", M1Large)
+  , ("m1.xlarge", M1Xlarge)
+  , ("m3.xlarge", M3Xlarge)
+  , ("m3.2xlarge", M32xlarge)
+  , ("c1.medium", C1Medium)
+  , ("c1.xlarge", C1Xlarge)
+  , ("c3.4xlarge", C34xlarge)
+  , ("c3.8xlarge", C38xlarge)
+  , ("cc1.4xlarge", Cc14xlarge)
+  , ("cc2.8xlarge", Cc28xlarge)
+  , ("cg1.4xlarge", Cg14xlarge)
+  , ("cr1.8xlarge", Cr18xlarge)
+  , ("g2.2xlarge", G22xlarge)
+  , ("m2.xlarge", M2Xlarge)
+  , ("m2.2xlarge", M22xlarge)
+  , ("m2.4xlarge", M24xlarge)
+  ]
+
 
 instance Show InstanceType where
-  show = T.unpack . unIT
+  show = textPrismShow itText
 
 instance Read InstanceType where
-  readsPrec _ s = [(InstanceType $ T.pack s, "")]
+  readsPrec = textPrismReadsPrec itText
 
 
 -------------------------------------------------------------------------------
 newtype AvailabilityZone = AvailabilityZone {
      unAZ :: Text
    } deriving (Eq,Ord,FromField)
+
 
 instance Show AvailabilityZone where
   show = T.unpack . unAZ
@@ -85,15 +136,38 @@ instance Read AvailabilityZone where
 
 
 -------------------------------------------------------------------------------
-newtype ProductDescription = ProductDescription {
-      unPD :: Text
-    } deriving (Eq,FromField)
+data ProductDescription =
+     LinuxUNIX
+   | SUSELinux
+   | Windows
+   | LinuxUNIXAmazonVPC
+   | SUSELinuxAmazonVPC
+   | WindowsAmazonVPC
+   deriving (Eq,Ord)
+
+instance FromField ProductDescription where
+  parseField = textPrismParseField pdText "ProductDescription"
+
+
+pdText :: Prism' Text ProductDescription
+pdText = mapPrism pdOptions
+
+
+pdOptions :: MS.Map Text ProductDescription
+pdOptions = MS.fromList
+    [ ("Linux/UNIX", LinuxUNIX)
+    , ("SUSE Linux", SUSELinux)
+    , ("Windows", Windows)
+    , ("Linux/UNIX (Amazon VPC)", LinuxUNIXAmazonVPC)
+    , ("SUSE Linux (Amazon VPC)", SUSELinuxAmazonVPC)
+    , ("Windows (Amazon VPC)", WindowsAmazonVPC)
+    ]
 
 instance Show ProductDescription where
-  show = T.unpack . unPD
+  show = textPrismShow pdText
 
 instance Read ProductDescription where
-  readsPrec _ s = [(ProductDescription $ T.pack s, "")]
+  readsPrec = textPrismReadsPrec pdText
 
 
 -------------------------------------------------------------------------------
@@ -126,7 +200,7 @@ getStr = many get
 --TODO: should duration be optional?
 data SIUOptions = SIUOptions {
       siuDuration           :: Maybe Duration
-    , siuInstanceTypes      :: Map InstanceType Int
+    , siuInstanceTypes      :: MS.Map InstanceType Int
     , siuAvailabilityZones  :: [AvailabilityZone]
     , siuProductDescription :: ProductDescription
     , siuSigmas             :: Int
@@ -158,3 +232,34 @@ instance ToNamedRecord SIUOfferingAnalysis where
     , ("AverageCost", showBS oaAverageCost)
     , ("TimesDeviated", showBS oaDeviations)
     ]
+
+
+-------------------------------------------------------------------------------
+-- | Boilerplate Reduction
+-------------------------------------------------------------------------------
+mapPrism :: (Ord k, Ord v) => MS.Map k v -> Prism' k v
+mapPrism m = prism toKey fromKey
+  where
+    toKey v = invertMS m MS.! v
+    fromKey k = note k $ MS.lookup k m
+
+
+-------------------------------------------------------------------------------
+textPrismShow :: Prism' Text v -> v -> String
+textPrismShow p = T.unpack . review p
+
+
+-------------------------------------------------------------------------------
+textPrismReadsPrec :: Prism' Text v -> Int -> ReadS v
+textPrismReadsPrec p _ s =  maybe [] (\x -> [(x, "")]) mVal
+  where
+    mVal = s ^. packed ^? p
+
+
+-------------------------------------------------------------------------------
+textPrismParseField :: Prism' Text b -> String -> ByteString -> Parser b
+textPrismParseField p typ f = convert =<< parseField f
+  where
+    convert t = maybe (fail $ "invalid " ++ typ ++ ": " ++ show t)
+                      return
+                      (t ^? p)

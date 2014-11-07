@@ -71,7 +71,6 @@ test-suite test
     , base
     , derive
     , text
-    -- NOOO
-    , containers
+    , lens
   hs-source-dirs: test
   default-language:    Haskell2010

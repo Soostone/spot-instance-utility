@@ -17,11 +17,14 @@ import           Data.Conduit.Binary         (sinkHandle)
 import qualified Data.Conduit.List           as CL
 import           Data.CSV.Conduit
 import           Data.CSV.Conduit.Conversion
+import           Data.List
 import qualified Data.Map.Strict             as M
 import           Data.Maybe
 import           Options.Applicative         as OA
 import           System.IO
 import           Text.Read
+
+import System.Exit
 -------------------------------------------------------------------------------
 import           Web.SIU.Analysis
 import           Web.SIU.History
@@ -32,7 +35,7 @@ import           Web.SIU.Types
 -------------------------------------------------------------------------------
 run :: SIUOptions -> IO ()
 run siuo = do
-  (cout, cerr, closer) <- historyStream siuo
+  (cout, cerr, closer) <- historyStream siuo :: IO (Source IO ByteString, Source IO ByteString, IO ExitCode)
   csvPipeline settings cout (CL.map getNamed =$= analyze siuo) (sinkHandle stdout)
   cerr $$ sinkHandle stderr
   void closer
@@ -76,16 +79,16 @@ optParser = SIUOptions
           <$> (map parseIP <$>
                many (strArgument (
                         metavar "INSTANCE_PAIR" <>
-                        help "Pair of instance type and optional count, defaulting to one. e.g. t1.micro,4 or m3.xlarge"))))
+                        help ("Pair of instance type and optional count, defaulting to one. Instance types: " ++ itOpts)))))
     <*> many (option auto (long "availability-zone" <>
                            short 'a' <>
                            metavar "AVAILABILITY_ZONE" <>
-                           help "Availability zone, e.g. us-east-1a"))
+                           help ("Availability zone. Can be repated. E.g. us-east-1a")))
     <*> option auto (long "product-description" <>
                      short 'p' <>
-                     value (ProductDescription "Linux/UNIX") <>
+                     value LinuxUNIX <>
                      metavar "PRODUCT_DESCRIPTION" <>
-                     help "EC2 product description string." <>
+                     help ("EC2 product description string. Options: " ++ pdOpts) <>
                      showDefault)
     <*> option auto (long "sigmas" <>
                      short 's' <>
@@ -93,6 +96,14 @@ optParser = SIUOptions
                      metavar "SIGMAS" <>
                      help "Stability is measured in number of times deviated > SIGMAS sigmas from the most frequent value." <>
                      showDefault)
+  where
+    pdOpts = showOptions $ M.elems pdOptions
+    itOpts = showOptions $ M.elems itOptions
+
+
+-------------------------------------------------------------------------------
+showOptions :: (Show a) => [a] -> String
+showOptions = intercalate "|" . map show
 
 
 -------------------------------------------------------------------------------
