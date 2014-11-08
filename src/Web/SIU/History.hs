@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TupleSections         #-}
 module Web.SIU.History
     ( historyStream
     )where
@@ -37,21 +38,9 @@ instance Show CmdSpec where
 
 -- these SHENANIGANS are because conduit process and the aws tools
 -- don't stream contents if the output is beyond a certain size
-historyStream :: SIUOptions -> IO (Source IO ByteString, Source IO ByteString, IO ExitCode)
-historyStream = uncurry slurpCommand <=< mkHistProc
+historyStream :: SIUOptions -> IO [(Source IO ByteString, Source IO ByteString, IO ExitCode)]
+historyStream = mapM (uncurry slurpCommand) <=< mkHistProcs
 
-
--------------------------------------------------------------------------------
--- | Call ec2-describe-availability-zones. Unfortunately this command
--- only supports one region at a time so it will take repeated calls
--- to expand multiple regions
-getAvailabilityZones :: Region -> IO [AvailabilityZone]
-getAvailabilityZones r = do
-  (out, err, cph) <- slurpCommand "ec2-describe-availability-zones" args
-  err $$ sinkHandle stderr
-  (out $= intoCSV awsCSVSettings $= CL.map getNamed $$ CL.consume ) `finally` cph
-  where
-    args = ["-H", "--region=" ++ show r]
 
 -------------------------------------------------------------------------------
 slurpCommand :: String -> [String] -> IO (Source IO ByteString, Source IO ByteString, IO ExitCode)
@@ -75,21 +64,18 @@ slurpCommand cmd args = do
                        }
 
 -------------------------------------------------------------------------------
-mkHistProc :: SIUOptions -> IO (String, [String])
-mkHistProc SIUOptions {..} = do
+mkHistProcs :: SIUOptions -> IO [(String, [String])]
+mkHistProcs SIUOptions {..} = do
     now <- getCurrentTime
-    finalAzs <- concat <$> mapM getAvailabilityZones siuRegions
-    let duration = fromMaybe [] (mkDurationFlags now <$> siuDuration)
-    let args = staticFlags ++
-               itypes ++
-               azs finalAzs ++
-               duration ++
-               [mkFlag "-d" $ show siuProductDescription]
-    return (cmd, args)
+    return [(cmd, mkArgs now r) | r <- siuRegions]
   where
+    mkArgs now r = staticFlags ++
+                   itypes ++
+                   fromMaybe [] (mkDurationFlags now <$> siuDuration) ++
+                   [ mkFlag "-d" $ show siuProductDescription
+                   , mkFlag "--region=" $ show r]
     cmd = "ec2-describe-spot-price-history"
     itypes = map (mkFlag "-t" . fst) $ M.toList siuInstanceTypes
-    azs = map (mkFlag "-a")
     mkFlag f v = f ++ show v
     staticFlags = ["-H"]
     mkDurationFlags now d = [ mkFlag "-s" . fmtTime $ subtractDuration d now

@@ -22,13 +22,9 @@ import           Web.SIU.Types
 --TODO: cleaner with lenses
 analyze :: (Monad m) => SIUOptions -> Consumer SpotPriceChange m [SIUOfferingAnalysis]
 --TODO: remove
-analyze siuo@SIUOptions {..} = CL.filter matchesAZ =$=
-                               CL.map multPrice =$=
+analyze siuo@SIUOptions {..} = CL.map multPrice =$=
                                (mkAnalysis siuo <$> CL.fold updateAcc mempty)
   where
-    matchesAZ SpotPriceChange{..}
-      | null siuAvailabilityZones = True
-      | otherwise                 = spcAvailabilityZone `elem` siuAvailabilityZones
     multPrice spc = spc { spcSpotPrice = findMult spc * spcSpotPrice spc}
     findMult :: SpotPriceChange -> Money
     findMult spc = fromIntegral $ fromMaybe 1 $ M.lookup (spcInstanceType spc) siuInstanceTypes

@@ -9,6 +9,7 @@ module Web.SIU.CLI
 
 -------------------------------------------------------------------------------
 import           Control.Arrow
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Catch         (MonadThrow)
 import           Data.ByteString             (ByteString)
@@ -20,11 +21,10 @@ import           Data.CSV.Conduit.Conversion
 import           Data.List
 import qualified Data.Map.Strict             as M
 import           Data.Maybe
+import           Data.Monoid
 import           Options.Applicative         as OA
 import           System.IO
 import           Text.Read
-
-import System.Exit
 -------------------------------------------------------------------------------
 import           Web.SIU.Analysis
 import           Web.SIU.History
@@ -36,10 +36,13 @@ import           Web.SIU.Utils
 -------------------------------------------------------------------------------
 run :: SIUOptions -> IO ()
 run siuo = do
-  (cout, cerr, closer) <- historyStream siuo :: IO (Source IO ByteString, Source IO ByteString, IO ExitCode)
+  streamTriples <- historyStream siuo
+  let cout = mconcat $ streamTriples^..each._1
+  let cerr = mconcat $ streamTriples^..each._2
+  let closers = streamTriples^..each._3
   csvPipeline awsCSVSettings cout (CL.map getNamed =$= analyze siuo) (sinkHandle stdout)
   cerr $$ sinkHandle stderr
-  void closer
+  sequence_ closers
   where
 
 
@@ -80,14 +83,10 @@ optParser = SIUOptions
                many (strArgument (
                         metavar "INSTANCE_PAIR" <>
                         help ("Pair of instance type and optional count, defaulting to one. Instance types: " ++ itOpts)))))
-    <*> many (option auto (long "availability-zone" <>
-                           short 'a' <>
-                           metavar "AVAILABILITY_ZONE" <>
-                           help "Availability zone. Can be repated. E.g. us-east-1a"))
     <*> many (option auto (long "region" <>
                            short 'r' <>
                            metavar "REGION" <>
-                           help ("Region, which will be expanded into availability zones. Can be repated. Options: " ++ rOpts)))
+                           help ("Region, which will be expanded into availability zones. Can be repated. You'll probably want to specify this, otherwise it it will default to us-east-1. Options: " ++ rOpts)))
     <*> option auto (long "product-description" <>
                      short 'p' <>
                      value LinuxUNIX <>

@@ -2,7 +2,7 @@
 
 `spot-instance-utility` is a tool over the aws sdk's
 `ec2-describe-spot-price-history` tool which analyzes a window of spot
-prices for the given instance types and availability zones and
+prices for the given instance types and regions and
 produces CSV output of their stability and pricing.
 
 
@@ -13,12 +13,12 @@ You have to have the aws tools installed.
 ## Usage
 
 ```
-spot-instance-utility --help                     
+spot-instance-utility --help
 spot-instance-utility - Tool for selecting EC2 spot instances based on historic
 prices
 
 Usage: spot-instance-utility [-d|--duration DURATION] [INSTANCE_PAIR]
-                             [-a|--availability-zone AVAILABILITY_ZONE]
+                             [-r|--region REGION]
                              [-p|--product-description PRODUCT_DESCRIPTION]
                              [-s|--sigmas SIGMAS]
   Analyze spot instance history for the given INSTANCE_PAIRs
@@ -29,8 +29,9 @@ Available options:
   INSTANCE_PAIR            Pair of instance type and optional count, defaulting
                            to one. Instance types:
                            c1.medium|c1.xlarge|c3.4xlarge|c3.8xlarge|cc1.4xlarge|cc2.8xlarge|cg1.4xlarge|cr1.8xlarge|g2.2xlarge|m1.large|m1.medium|m1.small|m1.xlarge|m2.2xlarge|m2.4xlarge|m2.xlarge|m3.2xlarge|m3.xlarge|t1.micro
-  -a,--availability-zone AVAILABILITY_ZONE
-                           Availability zone. Can be repated. E.g. us-east-1a
+  -r,--region REGION       Region, which will be expanded into availability
+                           zones. Can be repated. Options:
+                           ap-central-1|ap-northeast-1|ap-southeast-1|ap-southeast-2|eu-west-1|sa-east-1|us-east-1|us-west-1|us-west-2
   -p,--product-description PRODUCT_DESCRIPTION
                            EC2 product description string. Options:
                            Linux/UNIX|Linux/UNIX (Amazon VPC)|SUSE Linux|SUSE
@@ -69,6 +70,4 @@ Currently a work in process. Some TODOs:
 2. Better heuristics on ordering. Currently sorts by price ascending
    and then stability descending. This is not as robust ast it could
    be
-3. Use `ec2-describe-availability-zones` so that we can take a
-   *region* and compare all zones within that region.
-4. Advisor capability.
+3. Advisor capability.
