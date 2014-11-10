@@ -1,11 +1,12 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE RecordWildCards #-}
 module Web.SIU.Analysis
     ( analyze
     ) where
 
 -------------------------------------------------------------------------------
 import           Control.Applicative
+import           Control.Lens
 import           Data.Conduit
 import qualified Data.Conduit.List   as CL
 import           Data.List
@@ -19,17 +20,18 @@ import           Web.SIU.Types
 -------------------------------------------------------------------------------
 
 
---TODO: cleaner with lenses
 analyze :: (Monad m) => SIUOptions -> Consumer SpotPriceChange m [SIUOfferingAnalysis]
---TODO: remove
 analyze siuo@SIUOptions {..} = CL.map multPrice =$=
                                (mkAnalysis siuo <$> CL.fold updateAcc mempty)
   where
-    multPrice spc = spc { spcSpotPrice = findMult spc * spcSpotPrice spc}
+    multPrice spc = spc & spcSpotPrice *~ findMult spc
     findMult :: SpotPriceChange -> Money
-    findMult spc = fromIntegral $ fromMaybe 1 $ M.lookup (spcInstanceType spc) siuInstanceTypes
+    findMult SpotPriceChange{..} = _siuInstanceTypes ^. at _spcInstanceType .
+                                                        non 1 .
+                                                        to fromIntegral
     updateAcc :: Acc -> SpotPriceChange -> Acc
-    updateAcc acc SpotPriceChange {..} = M.insertWith mappend (spcInstanceType, spcAvailabilityZone) [spcSpotPrice] acc
+    updateAcc acc SpotPriceChange {..} = acc & at (_spcInstanceType, _spcAvailabilityZone)
+                                             <>~ Just [_spcSpotPrice]
 
 type Acc = Map (InstanceType, AvailabilityZone) [Money]
 
@@ -37,22 +39,22 @@ type Acc = Map (InstanceType, AvailabilityZone) [Money]
 mkAnalysis :: SIUOptions -> Acc -> [SIUOfferingAnalysis]
 mkAnalysis opts = sortBy cmp . mapMaybe (uncurry $ analyze1 opts) . M.toList
   where
-    cmp = comparing oaAverageCost <> comparing oaDeviations
+    cmp = comparing _oaAverageCost <> comparing _oaDeviations
 
 
 -------------------------------------------------------------------------------
 analyze1 :: SIUOptions -> (InstanceType, AvailabilityZone) -> [Money] -> Maybe SIUOfferingAnalysis
 analyze1 _ (_, _) [] = Nothing
 analyze1 SIUOptions {..} (it, az) ms = Just SIUOfferingAnalysis {
-      oaInstanceType = it
-    , oaAvailabilityZone = az
-    , oaAverageCost = avg
-    , oaDeviations = deviationsCount
+      _oaInstanceType = it
+    , _oaAvailabilityZone = az
+    , _oaAverageCost = avg
+    , _oaDeviations = deviationsCount
     }
   where
     (avg, stdev) = avgStdev ms
     mostFrequent = fst $ maximumBy (comparing snd) $ countUniques ms
-    outlier m = diff m mostFrequent > fromIntegral siuSigmas * stdev
+    outlier m = diff m mostFrequent > fromIntegral _siuSigmas * stdev
     diff a b = abs $ a - b
     deviationsCount = count outlier ms
 

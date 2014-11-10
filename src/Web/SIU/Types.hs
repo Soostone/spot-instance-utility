@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TemplateHaskell            #-}
 module Web.SIU.Types where
 
 -------------------------------------------------------------------------------
@@ -29,7 +30,8 @@ type Money = Double
 
 
 -------------------------------------------------------------------------------
-newtype UTC = UTC { unUTC :: UTCTime }
+newtype UTC = UTC { _unUTC :: UTCTime }
+
 
 instance FromField UTC where
   parseField s =
@@ -38,19 +40,19 @@ instance FromField UTC where
 
 -------------------------------------------------------------------------------
 data SpotPriceChange = SpotPriceChange {
-      spcProductDescription :: ProductDescription
-    , spcInstanceType       :: InstanceType
-    , spcSpotPrice          :: Money
-    , spcAvailabilityZone   :: AvailabilityZone
+      _spcProductDescription :: ProductDescription
+    , _spcInstanceType       :: InstanceType
+    , _spcSpotPrice          :: Money
+    , _spcAvailabilityZone   :: AvailabilityZone
     } deriving (Show,Eq)
 
 
 instance ToNamedRecord SpotPriceChange where
   toNamedRecord SpotPriceChange {..} = ML.fromList
-    [ ("ProductDescription", showBS spcProductDescription)
-    , ("InstanceType", showBS spcInstanceType)
-    , ("Price", showBS spcSpotPrice)
-    , ("AvailabilityZone", showBS spcAvailabilityZone)
+    [ ("ProductDescription", showBS _spcProductDescription)
+    , ("InstanceType", showBS _spcInstanceType)
+    , ("Price", showBS _spcSpotPrice)
+    , ("AvailabilityZone", showBS _spcAvailabilityZone)
     ]
 
 
@@ -124,12 +126,12 @@ instance Read InstanceType where
 
 -------------------------------------------------------------------------------
 newtype AvailabilityZone = AvailabilityZone {
-     unAZ :: Text
+     _unAZ :: Text
    } deriving (Eq,Ord,FromField)
 
 
 instance Show AvailabilityZone where
-  show = T.unpack . unAZ
+  show = T.unpack . _unAZ
 
 instance Read AvailabilityZone where
   readsPrec _ s = [(AvailabilityZone $ T.pack s, "")]
@@ -246,21 +248,21 @@ getStr = many get
 --TODO: shortcircuit empty instance types
 --TODO: should duration be optional?
 data SIUOptions = SIUOptions {
-      siuDuration           :: Maybe Duration
-    , siuInstanceTypes      :: MS.Map InstanceType Int
-    , siuRegions            :: [Region]
-    , siuProductDescription :: ProductDescription
-    , siuSigmas             :: Int
+      _siuDuration           :: Maybe Duration
+    , _siuInstanceTypes      :: MS.Map InstanceType Int
+    , _siuRegions            :: [Region]
+    , _siuProductDescription :: ProductDescription
+    , _siuSigmas             :: Int
     -- ^ empty list means all of them
     } deriving (Show,Eq)
 
 
 -------------------------------------------------------------------------------
 data SIUOfferingAnalysis = SIUOfferingAnalysis {
-      oaInstanceType     :: InstanceType
-    , oaAvailabilityZone :: AvailabilityZone
-    , oaAverageCost      :: Money
-    , oaDeviations       :: Int
+      _oaInstanceType     :: InstanceType
+    , _oaAvailabilityZone :: AvailabilityZone
+    , _oaAverageCost      :: Money
+    , _oaDeviations       :: Int
     } deriving (Show,Eq,Generic)
 
 
@@ -274,10 +276,10 @@ instance FromNamedRecord SIUOfferingAnalysis where
 
 instance ToNamedRecord SIUOfferingAnalysis where
   toNamedRecord SIUOfferingAnalysis {..} = ML.fromList
-    [ ("InstanceType", showBS oaInstanceType)
-    , ("AvailabilityZone", showBS oaAvailabilityZone)
-    , ("AverageCost", showBS oaAverageCost)
-    , ("TimesDeviated", showBS oaDeviations)
+    [ ("InstanceType", showBS _oaInstanceType)
+    , ("AvailabilityZone", showBS _oaAvailabilityZone)
+    , ("AverageCost", showBS _oaAverageCost)
+    , ("TimesDeviated", showBS _oaDeviations)
     ]
 
 
@@ -310,3 +312,14 @@ textPrismParseField p typ f = convert =<< parseField f
     convert t = maybe (fail $ "invalid " ++ typ ++ ": " ++ show t)
                       return
                       (t ^? p)
+
+
+-------------------------------------------------------------------------------
+-- | Lense Derivations
+-------------------------------------------------------------------------------
+makeLenses ''UTC
+makeLenses ''SpotPriceChange
+makeLenses ''AvailabilityZone
+makeLenses ''SIUOptions
+makeLenses ''SIUOfferingAnalysis
+

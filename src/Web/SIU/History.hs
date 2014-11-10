@@ -10,6 +10,7 @@ module Web.SIU.History
 -------------------------------------------------------------------------------
 import           Control.Applicative
 import           Control.Exception
+import           Control.Lens
 import           Control.Monad
 import           Data.ByteString             (ByteString)
 import qualified Data.ByteString.Lazy        as LBS
@@ -67,15 +68,15 @@ slurpCommand cmd args = do
 mkHistProcs :: SIUOptions -> IO [(String, [String])]
 mkHistProcs SIUOptions {..} = do
     now <- getCurrentTime
-    return [(cmd, mkArgs now r) | r <- siuRegions]
+    return [(cmd, mkArgs now r) | r <- _siuRegions]
   where
     mkArgs now r = staticFlags ++
                    itypes ++
-                   fromMaybe [] (mkDurationFlags now <$> siuDuration) ++
-                   [ mkFlag "-d" $ show siuProductDescription
+                   fromMaybe [] (mkDurationFlags now <$> _siuDuration) ++
+                   [ mkFlag "-d" $ show _siuProductDescription
                    , mkFlag "--region=" $ show r]
     cmd = "ec2-describe-spot-price-history"
-    itypes = map (mkFlag "-t" . fst) $ M.toList siuInstanceTypes
+    itypes = map (mkFlag "-t" . fst) $ M.toList _siuInstanceTypes
     mkFlag f v = f ++ show v
     staticFlags = ["-H"]
     mkDurationFlags now d = [ mkFlag "-s" . fmtTime $ subtractDuration d now
