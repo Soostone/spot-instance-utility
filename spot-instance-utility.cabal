@@ -1,5 +1,5 @@
 name:                spot-instance-utility
-version:             0.0.0.0
+version:             0.0.0.1
 synopsis:            Tool for selecting EC2 spot instances based on historic prices
 license:             AllRightsReserved
 license-file:        LICENSE
@@ -31,6 +31,7 @@ library
   default-language:    Haskell2010
   exposed-modules:
     Web.SIU.Analysis
+    Web.SIU.Analysis.Internal
     Web.SIU.History
     Web.SIU.Types
     Web.SIU.Utils
@@ -72,5 +73,8 @@ test-suite test
     , derive
     , text
     , lens
+    , containers
+    , random-shuffle
+    , random
   hs-source-dirs: test
   default-language:    Haskell2010

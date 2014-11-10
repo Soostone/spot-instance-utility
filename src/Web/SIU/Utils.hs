@@ -5,12 +5,15 @@ module Web.SIU.Utils
     , invertMS
     , note
     , awsCSVSettings
+    , count
+    , countUniques
     ) where
 
 
 -------------------------------------------------------------------------------
 import           Data.ByteString.Char8 (ByteString)
 import           Data.CSV.Conduit
+import qualified Data.Map.Lazy         as ML
 import qualified Data.Map.Strict       as MS
 import qualified Data.Text             as T
 import qualified Data.Text.Encoding    as T
@@ -43,3 +46,13 @@ note b Nothing  = Left b
 -------------------------------------------------------------------------------
 awsCSVSettings :: CSVSettings
 awsCSVSettings = defCSVSettings { csvSep = '\t' }
+
+
+-------------------------------------------------------------------------------
+countUniques :: (Eq a, Ord a) => [a] -> [(a, Int)]
+countUniques l = ML.toList $ ML.fromListWith (+) $ zip l (repeat 1)
+
+
+-------------------------------------------------------------------------------
+count :: (a -> Bool) -> [a] -> Int
+count p = length . filter p

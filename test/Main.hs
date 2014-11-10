@@ -6,7 +6,9 @@ module Main
 import           Test.Tasty
 -------------------------------------------------------------------------------
 import           Web.SIU.Tests.Arbitrary
+import           Web.SIU.Tests.Analysis.Internal
 import           Web.SIU.Tests.Types
+import           Web.SIU.Tests.Utils
 -------------------------------------------------------------------------------
 
 
@@ -17,5 +19,7 @@ main = defaultMain testSuite
 testSuite :: TestTree
 testSuite = testGroup "spot-instance-utility"
   [ typesTests
+  , utilsTests
+  , analysisInternalTests
   ]
 
