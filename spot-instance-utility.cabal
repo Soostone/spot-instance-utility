@@ -1,7 +1,7 @@
 name:                spot-instance-utility
 version:             0.0.0.1
 synopsis:            Tool for selecting EC2 spot instances based on historic prices
-license:             AllRightsReserved
+license:             BSD3
 license-file:        LICENSE
 author:              Michael Xavier
 maintainer:          michael.xavier@soostone.com
