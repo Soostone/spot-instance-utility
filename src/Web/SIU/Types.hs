@@ -4,8 +4,8 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TupleSections              #-}
 module Web.SIU.Types where
 
 -------------------------------------------------------------------------------
@@ -74,6 +74,9 @@ data InstanceType =
    | M32xlarge
    | C1Medium
    | C1Xlarge
+   | C3Large
+   | C3Xlarge
+   | C32xlarge
    | C34xlarge
    | C38xlarge
    | Cc14xlarge
@@ -104,6 +107,9 @@ itOptions = MS.fromList
   , ("m3.2xlarge", M32xlarge)
   , ("c1.medium", C1Medium)
   , ("c1.xlarge", C1Xlarge)
+  , ("c3.large", C3Large)
+  , ("c3.xlarge", C3Xlarge)
+  , ("c3.2xlarge", C32xlarge)
   , ("c3.4xlarge", C34xlarge)
   , ("c3.8xlarge", C38xlarge)
   , ("cc1.4xlarge", Cc14xlarge)
