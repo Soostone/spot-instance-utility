@@ -62,6 +62,7 @@ slurpCommand cmd args = do
                        , std_err       = CreatePipe
                        , close_fds     = True
                        , create_group  = False
+                       , delegate_ctlc = False
                        }
 
 -------------------------------------------------------------------------------
